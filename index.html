@@ -1,0 +1,260 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Генератор паролей</title>
+    <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      margin: 10px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 95%;
+      padding: 8px;
+      margin: 10px 20px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+    }
+
+    #symbolOptions label {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      margin: 25px;
+      border: none;
+      cursor: pointer;
+    }
+
+    #result {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    table.iksweb{
+      width: 100%;
+      border-collapse:collapse;
+      border-spacing:0;
+      height: auto;
+    }
+    table.iksweb,table.iksweb td, table.iksweb th {
+      border: 1px solid #595959;
+    }
+    table.iksweb td,table.iksweb th {
+      padding: 3px;
+      width: 260px;
+      height: 35px;
+    }
+    table.iksweb th {
+      background: #347c99; 
+      color: #fff; 
+      font-weight: normal;
+    }
+  </style>
+  <script>
+  function generatePassword() {
+    const keyword = document.getElementById("keyword").value;
+    const length = parseInt(document.getElementById("length").value);
+    const options = {
+      cyrillicLower: document.getElementById("cyrillicLower").checked,
+      cyrillicUpper: document.getElementById("cyrillicUpper").checked,
+      latinLower: document.getElementById("latinLower").checked,
+      latinUpper: document.getElementById("latinUpper").checked,
+      numbers: document.getElementById("numbers").checked,
+      symbols: document.getElementById("symbols").checked,
+      symbolOptions: {}
+    };
+
+    // Спецсимволы
+    const symbolInputs = document.querySelectorAll("input[name='symbol']");
+    symbolInputs.forEach(input => {
+      options.symbolOptions[input.value] = input.checked;
+    });
+
+    // Проверка условий
+    if (!keyword) {
+      alert("Введите ключевое слово!");
+      return;
+    }
+
+    if (length < 32 || length > 1024) {
+      alert("Длина кончного пароля задана неверно");
+      return;
+    }
+
+
+    // Генерация пароля
+    const password = generateSecurePassword(keyword, length, options);
+
+    // Вывод результата
+    document.getElementById("result").textContent = password;
+  }
+
+  function generateSecurePassword(keyword, length, options) {
+    // Хеширование ключевого слова
+    keyword = length + keyword
+
+    // Создание набора символов
+    let charset = "";
+    if (options.cyrillicLower){
+      charset += "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+      keyword += CryptoJS.SHA256(charset).toString()
+    }
+    if (options.cyrillicUpper){
+     charset += "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+     keyword += CryptoJS.SHA256(charset).toString()
+    }
+    if (options.latinLower){
+     charset += "abcdefghijklmnopqrstuvwxyz";
+     keyword += CryptoJS.SHA256(charset).toString()
+    }
+    if (options.latinUpper){
+      charset += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      keyword += CryptoJS.SHA256(charset).toString()
+    }
+    if (options.numbers){
+      charset += "0123456789";
+      keyword += CryptoJS.SHA256(charset).toString()
+    }
+
+    if (options.symbols) {
+      for (const symbol in options.symbolOptions) {
+        if (options.symbolOptions[symbol]) charset += symbol;
+      }
+    }
+
+     // Инициализация PRNG с помощью хеша ключевого слова
+    const hash = CryptoJS.SHA256(keyword).toString()
+    Math.seedrandom(hash);
+
+    // Генерация пароля
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      const index = Math.floor(Math.random() * charset.length); // Получаем случайный индекс
+      password += charset[index];
+    }
+
+    return password;
+  }
+
+  function copyPassword() {
+    const password = document.getElementById("result").textContent;
+    navigator.clipboard.writeText(password)
+      .then(() => console.log("Пароль скопирован в буфер обмена!"))
+      .catch(err => console.error("Ошибка копирования:", err));
+  }
+  </script>
+  </head>
+<body>
+
+<h1>Генератор паролей</h1>
+
+<table class="iksweb">
+    <tbody>
+      <tr>
+        <td>
+          <label for="keyword">Ключевое слово:</label><input type="text" id="keyword">
+          <br>
+          <label for="length">Длина пароля (32-1024):</label><input type="number" id="length" min="32" max="1024" value="64">
+          <br>
+          <button onclick="generatePassword()">Сгенерировать пароль</button>
+          <br>
+          <button onclick="copyPassword()">Скопировать пароль в буфер обмена</button>
+        </td>
+        <td>
+          <fieldset>
+            <legend><h2>Набор символов:</h2></legend>
+
+            <table class="iksweb">
+              <tbody>
+                <tr>
+                  <td><input type="checkbox" id="cyrillicLower" checked=""><label for="cyrillicLower">Прописные Кириллица (а - я)</label></td>
+                  <td><input type="checkbox" id="cyrillicUpper" checked=""><label for="cyrillicUpper">Заглавные Кириллица (А - Я)</label></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" id="latinLower" checked=""><label for="latinLower">Прописные Латиница (a - z)</label></td>
+                  <td><input type="checkbox" id="latinUpper" checked=""><label for="latinUpper">Заглавные Латиница (A - Z)</label></td>
+                </tr>
+                <tr>
+                  <td colspan="2"><input type="checkbox" id="numbers" checked=""><label for="numbers">Числа</label></td>
+                </tr>
+              </tbody>
+            </table>
+
+            </br>
+
+            <fieldset>
+            <legend><input type="checkbox" id="symbols" checked=""><label for="symbols">Спецсимволы</label></legend>
+              <table class="iksweb">
+                <tbody id="symbolOptions">
+                  <tr>
+                    <td><input type="checkbox" name="symbol" value="@" checked=""><label>@</label></td>
+                    <td><input type="checkbox" name="symbol" value="%" checked=""><label>%</label></td>
+                    <td><input type="checkbox" name="symbol" value="(" checked=""><label>(</label></td>
+                    <td><input type="checkbox" name="symbol" value="+" checked=""><label>+</label></td>
+                    <td><input type="checkbox" name="symbol" value="[" checked=""><label>[</label></td>
+                    <td><input type="checkbox" name="symbol" value=":" checked=""><label>:</label></td>
+                    <td><input type="checkbox" name="symbol" value="<" checked=""><label>&lt;</label></td>
+                    <td><input type="checkbox" name="symbol" value=">" checked=""><label>&gt;</label></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" name="symbol" value="!" checked=""><label>!</label></td>
+                    <td><input type="checkbox" name="symbol" value="^" checked=""><label>^</label></td>
+                    <td><input type="checkbox" name="symbol" value=")" checked=""><label>)</label></td>
+                    <td><input type="checkbox" name="symbol" value="=" checked=""><label>=</label></td>
+                    <td><input type="checkbox" name="symbol" value="]" checked=""><label>]</label></td>
+                    <td><input type="checkbox" name="symbol" value=";" checked=""><label>;</label></td>
+                    <td><input type="checkbox" name="symbol" value="," checked=""><label>,</label></td>
+                    <td><input type="checkbox" name="symbol" value="." checked=""><label>.</label></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" name="symbol" value="#" checked=""><label>#</label></td>
+                    <td><input type="checkbox" name="symbol" value="&amp;" checked=""><label>&amp;</label></td>
+                    <td><input type="checkbox" name="symbol" value="-" checked=""><label>-</label></td>
+                    <td><input type="checkbox" name="symbol" value="{" checked=""><label>{</label></td>
+                    <td><input type="checkbox" name="symbol" value="|" checked=""><label>|</label></td>
+                    <td><input type="checkbox" name="symbol" value="&quot;" checked=""><label>"</label></td>
+                    <td><input type="checkbox" name="symbol" value="?" checked=""><label>?</label></td>
+                    <td><input type="checkbox" name="symbol" value="/" checked=""><label>/</label></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" name="symbol" value="$" checked=""><label>$</label></td>
+                    <td><input type="checkbox" name="symbol" value="*" checked=""><label>*</label></td>
+                    <td><input type="checkbox" name="symbol" value="_" checked=""><label>_</label></td>
+                    <td><input type="checkbox" name="symbol" value="}" checked=""><label>}</label></td>
+                    <td><input type="checkbox" name="symbol" value="\" checked=""><label>\</label></td>
+                    <td><input type="checkbox" name="symbol" value="'" checked=""><label>'</label></td>
+                    <td><input type="checkbox" name="symbol" value="~" checked=""><label>~</label></td>
+                    <td><input type="checkbox" name="symbol" value="`" checked=""><label>`</label></td>
+                  </tr>
+                </tbody>
+              </table>
+            </fieldset>
+
+          </fieldset>
+        </td>
+      </tr>
+    </tbody>
+  <table>
+
+<h2>Сгенерированный пароль:</h2>
+<p id="result"></p>
+
+<script src="./crypto-js.min.js"></script>
+<script src="./seedrandom.min.js"></script>
+
+
+</body></html>
